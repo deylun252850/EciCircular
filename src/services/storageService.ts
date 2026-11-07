@@ -1,7 +1,8 @@
 import type { RecyclingRequest } from '../types';
+import { apiUrl } from './api';
 
 export async function loadRequests(): Promise<RecyclingRequest[]> {
-  const response = await fetch('/api/requests');
+  const response = await fetch(apiUrl('/api/requests'));
   if (!response.ok) {
     throw new Error('No se pudieron cargar las solicitudes del servidor.');
   }
@@ -15,7 +16,7 @@ export async function loadRequests(): Promise<RecyclingRequest[]> {
 }
 
 export async function saveRequests(requests: RecyclingRequest[]): Promise<boolean> {
-  const response = await fetch('/api/requests', {
+  const response = await fetch(apiUrl('/api/requests'), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(requests),

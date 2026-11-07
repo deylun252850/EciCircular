@@ -10,7 +10,24 @@ const app = express();
 const PORT = Number(process.env.PORT || 3001);
 const REQUESTS_FILE_PATH = path.join(process.cwd(), 'data', 'requests.json');
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+);
 
+app.use((req, res, next) => {
+  const origin = req.get('Origin');
+  if (!origin || !allowedOrigins.has(origin)) return next();
+
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  return next();
+});
 app.use(express.json({ limit: '20mb' }));
 
 async function readRequests() {
@@ -199,6 +216,6 @@ app.post('/api/analyze-image', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`EcoCircular server listening on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`EcoCircular server listening on port ${PORT}`);
 });

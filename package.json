@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -k \"node server.mjs\" \"vite --host 0.0.0.0\"",
+    "start": "node server.mjs",
     "build": "tsc -b && vite build",
     "test": "node --test",
     "preview": "vite preview --host 0.0.0.0"

@@ -1,4 +1,5 @@
 import type { WasteAnalysis } from '../types';
+import { apiUrl } from './api';
 
 export class AnalysisRequestError extends Error {
   constructor(message: string, readonly code?: string) {
@@ -10,7 +11,7 @@ export class AnalysisRequestError extends Error {
 export async function analyzeWithGemini(imageDataUrl: string, signal: AbortSignal): Promise<WasteAnalysis> {
   let response: Response;
   try {
-    response = await fetch('/api/analyze-image', {
+    response = await fetch(apiUrl('/api/analyze-image'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageDataUrl }),

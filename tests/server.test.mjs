@@ -17,9 +17,16 @@ async function getFreePort() {
 
 test('analysis endpoint validates inputs and reports missing Gemini configuration', async (t) => {
   const port = await getFreePort();
+  const allowedOrigin = 'https://ecocircular.vercel.app';
   const child = spawn(process.execPath, ['server.mjs'], {
     cwd: process.cwd(),
-    env: { ...process.env, PORT: String(port), GEMINI_API_KEY: '', GEMINI_MODEL: 'gemini-3.6-flash' },
+    env: {
+      ...process.env,
+      PORT: String(port),
+      GEMINI_API_KEY: '',
+      GEMINI_MODEL: 'gemini-3.6-flash',
+      CORS_ORIGIN: allowedOrigin,
+    },
     stdio: 'ignore',
   });
   t.after(() => child.kill());
@@ -28,7 +35,7 @@ test('analysis endpoint validates inputs and reports missing Gemini configuratio
   let health;
   for (let attempt = 0; attempt < 50; attempt += 1) {
     try {
-      health = await fetch(`${baseUrl}/api/health`);
+      health = await fetch(`${baseUrl}/api/health`, { headers: { Origin: allowedOrigin } });
       break;
     } catch {
       if (child.exitCode !== null) throw new Error(`Backend exited with code ${child.exitCode}`);
@@ -37,7 +44,19 @@ test('analysis endpoint validates inputs and reports missing Gemini configuratio
   }
   assert.ok(health, 'backend should start within five seconds');
   assert.equal(health.status, 200);
+  assert.equal(health.headers.get('access-control-allow-origin'), allowedOrigin);
   assert.deepEqual(await health.json(), { ok: true, geminiConfigured: false, model: 'gemini-3.6-flash' });
+
+  const preflight = await fetch(`${baseUrl}/api/requests`, {
+    method: 'OPTIONS',
+    headers: {
+      Origin: allowedOrigin,
+      'Access-Control-Request-Method': 'PUT',
+      'Access-Control-Request-Headers': 'content-type',
+    },
+  });
+  assert.equal(preflight.status, 204);
+  assert.match(preflight.headers.get('access-control-allow-methods') || '', /PUT/);
 
   const emptyRequest = await fetch(`${baseUrl}/api/analyze-image`, {
     method: 'POST',
