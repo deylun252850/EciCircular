@@ -1,0 +1,1651 @@
+http://localhost:5173/<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoCircular — Plataforma Educativa y de Gestión de Residuos</title>
+  
+  <!-- Tailwind CSS CDN con configuración personalizada de colores -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            eco: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              300: '#86efac',
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+              950: '#052e16',
+            },
+            earth: {
+              50: '#fbfaf8',
+              100: '#f5f2ec',
+              200: '#eae3d5',
+              700: '#4a3f35',
+              800: '#382f27'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons & React / Babel para ejecución inmediata -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-eco-200 selection:text-eco-900">
+  <div id="root"></div>
+
+  <!-- Aplicación React -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- BANCO DE DATOS DEMOSTRATIVOS (BOLIVIA) ---
+    const AGENCIAS_DEMO = [
+      {
+        id: "ag-1",
+        nombre: "Recicladora Illimani Verde",
+        ciudad: "La Paz",
+        zona: "Sopocachi / Cotahuma",
+        direccion: "Av. Mario Mercado N° 1420",
+        materiales: ["Plástico", "Papel y Cartón", "Metal"],
+        preciosRef: { "Plástico (PET)": "2.80 Bs/kg", "Cartón": "1.20 Bs/kg", "Aluminio": "8.50 Bs/kg" },
+        horario: "Lun a Vie: 08:30 - 17:00 | Sáb: 08:30 - 13:00",
+        minimoKg: 5,
+        telefono: "+591 71542890",
+        whatsapp: "59171542890",
+        tipoServicio: "Recepción en planta y Recojo programado",
+        verificada: true
+      },
+      {
+        id: "ag-2",
+        nombre: "EcoValle Soluciones Limpias",
+        ciudad: "Cochabamba",
+        zona: "Zona Norte / Cala Cala",
+        direccion: "Calle Teófilo Vargas N° 380",
+        materiales: ["Vidrio", "Orgánico", "Papel y Cartón"],
+        preciosRef: { "Vidrio entero": "0.70 Bs/kg", "Compostable": "Gratuito / Intercambio abono" },
+        horario: "Lun a Sáb: 08:00 - 16:30",
+        minimoKg: 3,
+        telefono: "+591 79781234",
+        whatsapp: "59179781234",
+        tipoServicio: "Recepción en planta",
+        verificada: true
+      },
+      {
+        id: "ag-3",
+        nombre: "Metales & Residuos del Oriente",
+        ciudad: "Santa Cruz",
+        zona: "Parque Industrial / 4to Anillo",
+        direccion: "PI-27 Manzano 12, Galpón 4",
+        materiales: ["Metal", "Electrónico (RAEE)", "Plástico"],
+        preciosRef: { "Cobre": "42.00 Bs/kg", "Baterías": "15.00 Bs/unidad", "Chatarra": "1.50 Bs/kg" },
+        horario: "Lun a Vie: 07:30 - 18:00",
+        minimoKg: 10,
+        telefono: "+591 76098765",
+        whatsapp: "59176098765",
+        tipoServicio: "Recepción a granel y recojo industrial",
+        verificada: true
+      },
+      {
+        id: "ag-4",
+        nombre: "Punto Verde Alto Andino",
+        ciudad: "El Alto",
+        zona: "Villa Adela / Cruce Viacha",
+        direccion: "Av. Bolivia N° 905",
+        materiales: ["Plástico", "Papel y Cartón", "Electrónico (RAEE)"],
+        preciosRef: { "PET Cristal": "2.90 Bs/kg", "Papel bond blanco": "1.80 Bs/kg" },
+        horario: "Lun a Sáb: 08:00 - 18:00",
+        minimoKg: 2,
+        telefono: "+591 72019283",
+        whatsapp: "59172019283",
+        tipoServicio: "Recepción en centro de acopio",
+        verificada: true
+      }
+    ];
+
+    const MUESTRAS_DEMO = [
+      {
+        id: "pet",
+        nombre: "Botella plástica de refresco",
+        imgUrl: "https://images.unsplash.com/photo-1595278069441-2cf29f8005a4?auto=format&fit=crop&w=600&q=80",
+        resultado: {
+          material: "Plástico",
+          especifico: "Polietileno Tereftalato (PET)",
+          codigoResina: "1 (PETE)",
+          estadoVisible: "Usado, limpio y seco, con etiqueta",
+          confianza: "94% (Alta)",
+          preparacion: "Retirar la tapa (suele ser PP-5), enjuagar si tiene restos de azúcar, escurrir y aplastar para optimizar volumen.",
+          reutilizacion: "Macetas de autorriego, contenedores de semillas, comederos para aves o ecoladrillos.",
+          precauciones: "No almacenar combustibles o pesticidas en este envase. No exponer a calor extremo para consumo humano.",
+          disposicion: "Entregar aplastado en centros de acopio de PET. Muy cotizado por recicladores de base.",
+          impactoAmbiental: "Tarda más de 450 años en fragmentarse en microplásticos que contaminan cuencas andinas y suelos agrícolas."
+        }
+      },
+      {
+        id: "carton",
+        nombre: "Caja de cartón de embalaje",
+        imgUrl: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80",
+        resultado: {
+          material: "Papel y Cartón",
+          especifico: "Cartón corrugado kraft",
+          codigoResina: "PAP 20",
+          estadoVisible: "Seco, con restos mínimos de cinta adhesiva",
+          confianza: "96% (Muy Alta)",
+          preparacion: "Desarmar la caja completamente hasta dejarla plana. Retirar cintas plásticas anchas o grapas metálicas.",
+          reutilizacion: "Excelente para almacenamiento, compostaje casero (como capa seca 'café') o acolchado de huertos (mulch).",
+          precauciones: "Evitar que se moje con lluvia o grasa de alimentos (las cajas con grasa de pizza no son reciclables mecánicamente).",
+          disposicion: "Agrupar en fardos amarrados con cordel para entregar a agencias o recolectores zonales.",
+          impactoAmbiental: "Cada tonelada reciclada salva aproximadamente 17 árboles adultos y ahorra más del 50% de agua en fabricación."
+        }
+      },
+      {
+        id: "aluminio",
+        nombre: "Lata de bebida de aluminio",
+        imgUrl: "https://images.unsplash.com/photo-1584281722576-5db2e67f2257?auto=format&fit=crop&w=600&q=80",
+        resultado: {
+          material: "Metal",
+          especifico: "Aluminio laminado (Latas UBC)",
+          codigoResina: "ALU 41",
+          estadoVisible: "Vacío, sin aplastar",
+          confianza: "92% (Alta)",
+          preparacion: "Vaciar cualquier líquido residual, un enjuague rápido y aplastar con el pie o mano para reducir espacio.",
+          reutilizacion: "Portalápices, moldes para artesanías o ceniceros portátiles.",
+          precauciones: "Cuidado con los bordes metálicos doblados que puedan causar cortes.",
+          disposicion: "El aluminio es 100% reciclable de forma infinita. Tiene el valor de rescate por kilo más alto del mercado local.",
+          impactoAmbiental: "Reciclar aluminio ahorra un 95% de la energía requerida para extraer bauxita virgen."
+        }
+      }
+    ];
+
+    // --- COMPONENTE PRINCIPAL ---
+    function App() {
+      const [vista, setVista] = useState('inicio'); // 'inicio', 'escanear', 'directorio', 'solicitudes', 'guia'
+      const [residuosIdentificados, setResiduosIdentificados] = useState([]);
+      const [solicitudes, setSolicitudes] = useState(() => {
+        const saved = localStorage.getItem('ecocircular_solicitudes');
+        return saved ? JSON.parse(saved) : [
+          {
+            id: 'SOL-8021',
+            fecha: '2026-10-24 10:30',
+            material: 'Plástico (PET)',
+            cantidadKg: '12.5',
+            agencia: 'Recicladora Illimani Verde (La Paz)',
+            estado: 'Recibida',
+            fotoUrl: MUESTRAS_DEMO[0].imgUrl,
+            observaciones: 'Limpio y aplastado en 2 bolsas grandes.'
+          }
+        ];
+      });
+
+      // Estado del escáner
+      const [imagenSeleccionada, setImagenSeleccionada] = useState(null);
+      const [analizando, setAnalizando] = useState(false);
+      const [resultadoAnalisis, setResultadoAnalisis] = useState(null);
+      const [errorCamara, setErrorCamara] = useState(null);
+      const [camaraActiva, setCamaraActiva] = useState(false);
+      const [apiKeyModal, setApiKeyModal] = useState(false);
+      const [apiKey, setApiKey] = useState(() => localStorage.getItem('ecocircular_gemini_key') || '');
+      const [modoDemoForzado, setModoDemoForzado] = useState(true);
+
+      // Estado del formulario de solicitud
+      const [solicitudForm, setSolicitudForm] = useState({
+        material: '',
+        cantidadKg: '',
+        agenciaId: '',
+        observaciones: '',
+        fotoUrl: ''
+      });
+      const [comprobanteGenerado, setComprobanteGenerado] = useState(null);
+
+      // Filtros de directorio
+      const [filtroMaterial, setFiltroMaterial] = useState('Todos');
+      const [filtroCiudad, setFiltroCiudad] = useState('Todas');
+      const [busquedaAgencia, setBusquedaAgencia] = useState('');
+
+      const videoRef = useRef(null);
+      const streamRef = useRef(null);
+
+      useEffect(() => {
+        localStorage.setItem('ecocircular_solicitudes', JSON.stringify(solicitudes));
+      }, [solicitudes]);
+
+      // Control de cámara
+      const iniciarCamara = async () => {
+        setErrorCamara(null);
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false
+          });
+          streamRef.current = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+          setCamaraActiva(true);
+        } catch (err) {
+          setErrorCamara("No se pudo acceder a la cámara. Asegúrate de conceder permisos o utiliza la carga de archivos.");
+          setCamaraActiva(false);
+        }
+      };
+
+      const detenerCamara = () => {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        setCamaraActiva(false);
+      };
+
+      const capturarFoto = () => {
+        if (!videoRef.current) return;
+        const canvas = document.createElement("canvas");
+        canvas.width = videoRef.current.videoWidth || 640;
+        canvas.height = videoRef.current.videoHeight || 480;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        setImagenSeleccionada(dataUrl);
+        detenerCamara();
+      };
+
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setImagenSeleccionada(reader.result);
+            setResultadoAnalisis(null);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      // Análisis con Gemini AI o Mock Inteligente
+      const ejecutarAnalisis = async () => {
+        if (!imagenSeleccionada) return;
+        setAnalizando(true);
+        setResultadoAnalisis(null);
+
+        // Si el usuario configuró una API Key real de Google Gemini
+        if (apiKey && !modoDemoForzado) {
+          try {
+            const base64Data = imagenSeleccionada.split(',')[1];
+            const mimeType = imagenSeleccionada.split(';')[0].split(':')[1] || 'image/jpeg';
+            
+            const prompt = `Analiza esta fotografía de un residuo o material reciclable para Bolivia. Responde estrictamente en formato JSON con la siguiente estructura:
+            {
+              "material": "Plástico | Papel y Cartón | Vidrio | Metal | Orgánico | Electrónico | Otro",
+              "especifico": "Nombre comercial y técnico del residuo",
+              "codigoResina": "Código SPI si aplica (ej. 1 PET, 2 HDPE) o No visible/No aplica",
+              "estadoVisible": "Limpio, sucio, roto, contaminado, etc.",
+              "confianza": "Porcentaje estimado (ej. 90%) y nivel",
+              "preparacion": "Instrucciones prácticas para limpiarlo o compactarlo",
+              "reutilizacion": "Ideas de upcycling o reuso",
+              "precauciones": "Riesgos de corte, toxicidad o higiene",
+              "disposicion": "Dónde y cómo entregarlo en centros de acopio",
+              "impactoAmbiental": "Cómo previene contaminación de suelos o fuentes hídricas"
+            }
+            No asumas toxicidad absoluta sin certezas. Si hay duda, dilo.`;
+
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [
+                    { text: prompt },
+                    { inline_data: { mime_type: mimeType, data: base64Data } }
+                  ]
+                }]
+              })
+            });
+
+            const data = await res.json();
+            if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+              const rawText = data.candidates[0].content.parts[0].text;
+              const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                setResultadoAnalisis({ ...parsed, esModoDemo: false });
+                setAnalizando(false);
+                return;
+              }
+            }
+          } catch (err) {
+            console.warn("Fallo en API Gemini, alternando a modo de demostración contextual:", err);
+          }
+        }
+
+        // Modo Demostrativo Guiado (Simulación realista)
+        setTimeout(() => {
+          // Seleccionar una muestra adecuada o fallback genérico
+          const muestraRandom = MUESTRAS_DEMO[Math.floor(Math.random() * MUESTRAS_DEMO.length)];
+          setResultadoAnalisis({
+            ...muestraRandom.resultado,
+            esModoDemo: true,
+            notaDemo: "Resultado generado mediante el motor de demostración validado para el prototipo."
+          });
+          setAnalizando(false);
+        }, 1300);
+      };
+
+      const seleccionarMuestraPredefinida = (muestra) => {
+        detenerCamara();
+        setImagenSeleccionada(muestra.imgUrl);
+        setResultadoAnalisis({
+          ...muestra.resultado,
+          esModoDemo: true,
+          notaDemo: "Muestra de prueba preconfigurada para exhibición."
+        });
+      };
+
+      const iniciarSolicitudDesdeAnalisis = () => {
+        if (!resultadoAnalisis) return;
+        setSolicitudForm({
+          material: `${resultadoAnalisis.material} — ${resultadoAnalisis.especifico}`,
+          cantidadKg: '5',
+          agenciaId: AGENCIAS_DEMO[0].id,
+          observaciones: `Estado: ${resultadoAnalisis.estadoVisible}. Preparado según guía de EcoCircular.`,
+          fotoUrl: imagenSeleccionada || ''
+        });
+        setVista('crear-solicitud');
+      };
+
+      const iniciarSolicitudDesdeAgencia = (agencia) => {
+        setSolicitudForm(prev => ({
+          ...prev,
+          agenciaId: agencia.id,
+          material: prev.material || agencia.materiales[0]
+        }));
+        setVista('crear-solicitud');
+      };
+
+      const guardarSolicitud = (e) => {
+        e.preventDefault();
+        const agenciaObj = AGENCIAS_DEMO.find(a => a.id === solicitudForm.agenciaId) || AGENCIAS_DEMO[0];
+        const nuevaSol = {
+          id: `SOL-${Math.floor(1000 + Math.random() * 9000)}`,
+          fecha: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          material: solicitudForm.material || 'Material mixto reciclable',
+          cantidadKg: solicitudForm.cantidadKg || '1',
+          agencia: `${agenciaObj.nombre} (${agenciaObj.ciudad})`,
+          estado: 'Pendiente',
+          fotoUrl: solicitudForm.fotoUrl || 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=600&q=80',
+          observaciones: solicitudForm.observaciones || 'Sin observaciones adicionales'
+        };
+
+        setSolicitudes([nuevaSol, ...solicitudes]);
+        setComprobanteGenerado(nuevaSol);
+        setVista('comprobante');
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
+          
+          {/* BARRA SUPERIOR / HEADER */}
+          <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+              
+              {/* Logotipo */}
+              <button onClick={() => setVista('inicio')} className="flex items-center gap-2.5 text-left group">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-eco-800 to-eco-600 flex items-center justify-center text-white shadow-sm shadow-eco-800/30 group-hover:scale-105 transition-transform">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="font-extrabold text-xl tracking-tight text-eco-950 flex items-center gap-1">
+                    Eco<span className="text-eco-600">Circular</span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-eco-100 text-eco-800 border border-eco-200 ml-1">BO</span>
+                  </span>
+                  <p className="text-[11px] text-slate-500 font-medium leading-none">Gestión & Educación Ambiental</p>
+                </div>
+              </button>
+
+              {/* Navegación Desktop */}
+              <nav className="hidden md:flex items-center gap-1 font-medium text-sm">
+                <button 
+                  onClick={() => setVista('inicio')}
+                  className={`px-3.5 py-2 rounded-lg transition-colors ${vista === 'inicio' ? 'text-eco-800 bg-eco-50 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                >
+                  Inicio
+                </button>
+                <button 
+                  onClick={() => { detenerCamara(); setVista('escanear'); }}
+                  className={`px-3.5 py-2 rounded-lg transition-colors flex items-center gap-1.5 ${vista === 'escanear' ? 'text-eco-800 bg-eco-50 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-eco-500 animate-pulse"></span>
+                  Identificar Residuo
+                </button>
+                <button 
+                  onClick={() => setVista('directorio')}
+                  className={`px-3.5 py-2 rounded-lg transition-colors ${vista === 'directorio' ? 'text-eco-800 bg-eco-50 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                >
+                  Agencias
+                </button>
+                <button 
+                  onClick={() => setVista('guia')}
+                  className={`px-3.5 py-2 rounded-lg transition-colors ${vista === 'guia' ? 'text-eco-800 bg-eco-50 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                >
+                  Guía Ecológica
+                </button>
+                <button 
+                  onClick={() => setVista('solicitudes')}
+                  className={`px-3.5 py-2 rounded-lg transition-colors flex items-center gap-1.5 ${vista === 'solicitudes' ? 'text-eco-800 bg-eco-50 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                >
+                  <span>Solicitudes</span>
+                  <span className="text-xs bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full font-bold">{solicitudes.length}</span>
+                </button>
+              </nav>
+
+              {/* Botón Acción Rápida / Configuración */}
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setApiKeyModal(true)}
+                  title="Configuración de IA Gemini"
+                  className="p-2 text-slate-500 hover:text-eco-700 hover:bg-eco-50 rounded-lg text-xs font-medium border border-slate-200 flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="hidden sm:inline">IA Mode</span>
+                </button>
+                <button
+                  onClick={() => { detenerCamara(); setVista('escanear'); }}
+                  className="bg-eco-600 hover:bg-eco-700 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Identificar</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Navegación Móvil Inferior/Tabs */}
+            <div className="md:hidden border-t border-slate-200 bg-white px-2 py-1 flex justify-around text-[11px] font-medium text-slate-600">
+              <button onClick={() => setVista('inicio')} className={`p-2 flex flex-col items-center ${vista === 'inicio' ? 'text-eco-700 font-bold' : ''}`}>
+                <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Inicio
+              </button>
+              <button onClick={() => { detenerCamara(); setVista('escanear'); }} className={`p-2 flex flex-col items-center ${vista === 'escanear' ? 'text-eco-700 font-bold' : ''}`}>
+                <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+                Escanear
+              </button>
+              <button onClick={() => setVista('directorio')} className={`p-2 flex flex-col items-center ${vista === 'directorio' ? 'text-eco-700 font-bold' : ''}`}>
+                <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                Agencias
+              </button>
+              <button onClick={() => setVista('guia')} className={`p-2 flex flex-col items-center ${vista === 'guia' ? 'text-eco-700 font-bold' : ''}`}>
+                <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                Guía
+              </button>
+              <button onClick={() => setVista('solicitudes')} className={`p-2 flex flex-col items-center ${vista === 'solicitudes' ? 'text-eco-700 font-bold' : ''}`}>
+                <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Historial ({solicitudes.length})
+              </button>
+            </div>
+          </header>
+
+          {/* CONTENIDO PRINCIPAL SEGÚN VISTA */}
+          <main className="flex-1">
+
+            {/* 1. VISTA DE INICIO */}
+            {vista === 'inicio' && (
+              <div className="space-y-16 pb-16">
+                {/* Hero Section */}
+                <section className="relative overflow-hidden bg-gradient-to-b from-eco-900 via-eco-800 to-eco-950 text-white pt-12 pb-20 px-4 sm:px-6">
+                  <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#86efac_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                  
+                  <div className="max-w-4xl mx-auto text-center relative z-10 space-y-6">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-eco-500/20 text-eco-200 border border-eco-500/30 backdrop-blur-sm">
+                      <span className="w-2 h-2 rounded-full bg-eco-400 animate-ping"></span>
+                      Iniciativa Ciudadana Bolivia 2026
+                    </span>
+
+                    <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight">
+                      Cada residuo cuenta.<br />
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-eco-200 via-eco-400 to-emerald-300">
+                        Tu acción transforma el planeta.
+                      </span>
+                    </h1>
+
+                    <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
+                      EcoCircular te enseña a clasificar tus materiales en segundos con inteligencia artificial, conecta tus residuos con centros autorizados de reciclaje en Bolivia y previene la contaminación de nuestras aguas y suelos.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+                      <button
+                        onClick={() => { detenerCamara(); setVista('escanear'); }}
+                        className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-eco-500 hover:bg-eco-400 text-eco-950 font-bold shadow-lg shadow-eco-500/25 transition-all flex items-center justify-center gap-2 transform active:scale-95"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        </svg>
+                        Identificar un residuo ahora
+                      </button>
+
+                      <button
+                        onClick={() => setVista('directorio')}
+                        className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/15 transition-all flex items-center justify-center gap-2"
+                      >
+                        Ver Agencias y Precios
+                      </button>
+                    </div>
+
+                    {/* Badge de Datos Demostrativos */}
+                    <p className="text-xs text-eco-300/80 pt-2 font-mono">
+                      * Entorno interactivo para demostración académica. No compromete transacciones monetarias reales.
+                    </p>
+                  </div>
+                </section>
+
+                {/* Métricas de Impacto (Demostrativas) */}
+                <section className="max-w-6xl mx-auto px-4 sm:px-6 -mt-10 relative z-20">
+                  <div className="bg-white rounded-2xl shadow-xl border border-slate-200/80 p-6 grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="text-center p-3 border-r border-slate-100 last:border-0">
+                      <div className="text-3xl sm:text-4xl font-extrabold text-eco-700">1,480+</div>
+                      <div className="text-xs uppercase font-bold text-slate-600 mt-1">Kg recuperados</div>
+                      <span className="text-[10px] text-slate-500 font-mono">(Datos demo)</span>
+                    </div>
+                    <div className="text-center p-3 border-r border-slate-100 last:border-0">
+                      <div className="text-3xl sm:text-4xl font-extrabold text-blue-600">3,200 L</div>
+                      <div className="text-xs uppercase font-bold text-slate-600 mt-1">Agua preservada</div>
+                      <span className="text-[10px] text-slate-500 font-mono">(Estimado)</span>
+                    </div>
+                    <div className="text-center p-3 border-r border-slate-100 last:border-0">
+                      <div className="text-3xl sm:text-4xl font-extrabold text-amber-600">890 Kg</div>
+                      <div className="text-xs uppercase font-bold text-slate-600 mt-1">CO₂ mitigado</div>
+                      <span className="text-[10px] text-slate-500 font-mono">(Cálculo ciclo vida)</span>
+                    </div>
+                    <div className="text-center p-3">
+                      <div className="text-3xl sm:text-4xl font-extrabold text-emerald-700">24</div>
+                      <div className="text-xs uppercase font-bold text-slate-600 mt-1">Puntos de acopio</div>
+                      <span className="text-[10px] text-slate-500 font-mono">(Red piloto)</span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Proceso en 3 Pasos */}
+                <section className="max-w-6xl mx-auto px-4 sm:px-6">
+                  <div className="text-center space-y-2 mb-10">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">¿Cómo funciona EcoCircular?</h2>
+                    <p className="text-slate-600 max-w-xl mx-auto text-sm">
+                      Un flujo circular diseñado para ser tan simple como tomar una foto con tu teléfono.
+                    </p>
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div className="bg-white rounded-xl p-6 border border-slate-200 hover:border-eco-300 transition-all shadow-sm">
+                      <div className="w-12 h-12 rounded-xl bg-eco-100 text-eco-800 font-bold flex items-center justify-center text-xl mb-4">
+                        1
+                      </div>
+                      <h3 className="font-bold text-lg text-slate-900 mb-2">Captura e Identifica</h3>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Toma una foto con tu cámara. La IA analiza el material (polímero, celulosa, metal), su código de reciclaje y su grado de limpieza.
+                      </p>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-6 border border-slate-200 hover:border-eco-300 transition-all shadow-sm">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xl mb-4">
+                        2
+                      </div>
+                      <h3 className="font-bold text-lg text-slate-900 mb-2">Prepara y Reutiliza</h3>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Aprende cómo enjuagar, secar y compactar el residuo según estándares industriales para maximizar su valor y no rechazar lotes.
+                      </p>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-6 border border-slate-200 hover:border-eco-300 transition-all shadow-sm">
+                      <div className="w-12 h-12 rounded-xl bg-teal-100 text-teal-800 font-bold flex items-center justify-center text-xl mb-4">
+                        3
+                      </div>
+                      <h3 className="font-bold text-lg text-slate-900 mb-2">Entrega o Monetiza</h3>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Elige una agencia recicladora cercana en La Paz, Cochabamba, Santa Cruz o El Alto y genera una solicitud formal de entrega.
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Sección Educativa: Suelo, Agua y Aire */}
+                <section className="max-w-6xl mx-auto px-4 sm:px-6">
+                  <div className="bg-gradient-to-br from-slate-900 to-eco-950 text-white rounded-3xl p-8 sm:p-12 overflow-hidden shadow-2xl relative">
+                    <div className="max-w-2xl space-y-4 mb-8">
+                      <span className="text-eco-400 font-mono text-xs uppercase tracking-wider font-semibold">Educación Crítica</span>
+                      <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+                        ¿Qué ocurre cuando no reciclamos en nuestras ciudades?
+                      </h2>
+                      <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                        En muchas urbes de Bolivia, toneladas de residuos terminan en botaderos a cielo abierto o laderas, generando lixiviados y contaminación irreversible.
+                      </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                        <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold mb-3">
+                          🌱
+                        </div>
+                        <h4 className="font-bold text-base text-white mb-1.5">Contaminación del Suelo</h4>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          Pilas, plásticos y aceites liberan metales pesados (cadmio, plomo) que esterilizan la tierra fértil e impiden la absorción de nutrientes naturales.
+                        </p>
+                      </div>
+
+                      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                        <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold mb-3">
+                          💧
+                        </div>
+                        <h4 className="font-bold text-base text-white mb-1.5">Contaminación del Agua</h4>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          Los ríos Choqueyapu, Rocha o Piraí arrastran plásticos que se degradan en micropartículas, llegando a napas subterráneas y cultivos de consumo.
+                        </p>
+                      </div>
+
+                      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                        <div className="w-10 h-10 rounded-lg bg-rose-500/20 text-rose-300 flex items-center justify-center font-bold mb-3">
+                          💨
+                        </div>
+                        <h4 className="font-bold text-base text-white mb-1.5">Contaminación del Aire</h4>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          La quema indiscriminada de cables y basura para extraer cobre libera dioxinas y furanos cancerígenos que respiran familias enteras.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 text-center sm:text-left">
+                      <button 
+                        onClick={() => setVista('guia')}
+                        className="inline-flex items-center gap-2 text-eco-300 hover:text-white font-semibold text-sm transition-colors"
+                      >
+                        Consultar la guía completa de prevención ecológica
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {/* 2. VISTA DE ESCANEO / IDENTIFICACIÓN */}
+            {vista === 'escanear' && (
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+                
+                {/* Título de sección */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-2">
+                        <span>Identificador de Residuos</span>
+                        <span className="text-xs bg-eco-100 text-eco-800 font-bold px-2.5 py-0.5 rounded-full border border-eco-200">
+                          {apiKey && !modoDemoForzado ? 'Gemini 1.5 Flash' : 'Modo Demostrativo'}
+                        </span>
+                      </h1>
+                      <p className="text-sm text-slate-600 mt-1">
+                        Utiliza la cámara de tu móvil o sube una foto para clasificar el residuo y recibir recomendaciones seguras.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selector de Entrada: Cámara / Archivo / Muestras */}
+                <div className="grid md:grid-cols-12 gap-6">
+                  
+                  {/* Panel Izquierdo: Captura */}
+                  <div className="md:col-span-6 space-y-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden p-4 shadow-sm">
+                      <div className="relative aspect-[4/3] bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-800">
+                        
+                        {camaraActiva ? (
+                          <div className="w-full h-full relative">
+                            <video 
+                              ref={videoRef} 
+                              autoPlay 
+                              playsInline 
+                              muted 
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 border-2 border-eco-400/50 pointer-events-none m-6 rounded-lg flex items-center justify-center">
+                              <span className="text-xs text-eco-300 bg-slate-900/80 px-2 py-1 rounded">Enfoca el objeto</span>
+                            </div>
+                          </div>
+                        ) : imagenSeleccionada ? (
+                          <img 
+                            src={imagenSeleccionada} 
+                            alt="Residuo seleccionado" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-center p-6 space-y-3">
+                            <div className="w-14 h-14 mx-auto rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </div>
+                            <p className="text-xs text-slate-400 max-w-xs">
+                              Cámara desactivada o sin imagen cargada. Activa la cámara o sube un archivo.
+                            </p>
+                          </div>
+                        )}
+
+                        {errorCamara && (
+                          <div className="absolute inset-0 bg-slate-950/90 text-rose-300 p-4 flex flex-col items-center justify-center text-center text-xs">
+                            <p className="font-semibold mb-2">{errorCamara}</p>
+                            <button onClick={iniciarCamara} className="px-3 py-1.5 bg-rose-900/50 rounded-lg border border-rose-700 text-white">Reintentar</button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Controles de Entrada */}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {camaraActiva ? (
+                          <>
+                            <button
+                              onClick={capturarFoto}
+                              className="flex-1 bg-eco-600 hover:bg-eco-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+                            >
+                              <span className="w-3 h-3 rounded-full bg-white animate-pulse"></span>
+                              Tomar fotografía
+                            </button>
+                            <button
+                              onClick={detenerCamara}
+                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 py-2.5 px-4 rounded-xl text-sm font-semibold"
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={iniciarCamara}
+                              className="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-medium py-2.5 px-3 rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                              Abrir cámara
+                            </button>
+                            
+                            <label className="flex-1 bg-eco-50 hover:bg-eco-100 text-eco-800 border border-eco-200 font-medium py-2.5 px-3 rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                              <span>Subir archivo</span>
+                              <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                            </label>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Botón de Analizar */}
+                      {imagenSeleccionada && !camaraActiva && (
+                        <div className="mt-3 pt-3 border-t border-slate-100">
+                          <button
+                            onClick={ejecutarAnalisis}
+                            disabled={analizando}
+                            className={`w-full py-3 rounded-xl font-bold text-sm text-white transition-all shadow-md flex items-center justify-center gap-2 ${
+                              analizando 
+                                ? 'bg-slate-400 cursor-not-allowed' 
+                                : 'bg-gradient-to-r from-eco-600 to-emerald-600 hover:from-eco-700 hover:to-emerald-700 shadow-eco-600/30'
+                            }`}
+                          >
+                            {analizando ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Analizando características...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Confirmar y Analizar Imagen
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Banco de Muestras Rápidas (Para evaluación ágil sin cámara) */}
+                    <div className="bg-slate-100 rounded-xl p-3 border border-slate-200">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+                        ¿Sin cámara a mano? Prueba una muestra precargada:
+                      </span>
+                      <div className="grid grid-cols-3 gap-2">
+                        {MUESTRAS_DEMO.map(m => (
+                          <button
+                            key={m.id}
+                            onClick={() => seleccionarMuestraPredefinida(m)}
+                            className="bg-white hover:border-eco-500 border border-slate-200 rounded-lg p-1.5 text-left transition-all group"
+                          >
+                            <img src={m.imgUrl} alt={m.nombre} className="w-full h-14 object-cover rounded mb-1 group-hover:scale-102 transition-transform" />
+                            <p className="text-[10px] font-semibold text-slate-700 truncate">{m.nombre}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Panel Derecho: Resultados del Análisis */}
+                  <div className="md:col-span-6">
+                    {resultadoAnalisis ? (
+                      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+                        
+                        {/* Cabecera del Análisis */}
+                        <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                          <div>
+                            <span className="text-xs uppercase font-extrabold tracking-wider text-eco-700 bg-eco-50 px-2 py-0.5 rounded border border-eco-200">
+                              {resultadoAnalisis.material}
+                            </span>
+                            <h3 className="text-xl font-bold text-slate-900 mt-1">
+                              {resultadoAnalisis.especifico}
+                            </h3>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-500 block">Nivel de confianza</span>
+                            <span className="text-sm font-bold text-emerald-600">{resultadoAnalisis.confianza}</span>
+                          </div>
+                        </div>
+
+                        {resultadoAnalisis.esModoDemo && (
+                          <div className="text-[11px] bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg flex items-center gap-2">
+                            <svg className="w-4 h-4 flex-shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span><strong>Demostración académica:</strong> {resultadoAnalisis.notaDemo || "Datos simulados representativos."}</span>
+                          </div>
+                        )}
+
+                        {/* Tarjetas de Datos Estructurados */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                            <span className="text-slate-500 block font-medium">Código de resina / SPI:</span>
+                            <span className="font-bold text-slate-800">{resultadoAnalisis.codigoResina}</span>
+                          </div>
+                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                            <span className="text-slate-500 block font-medium">Estado visible:</span>
+                            <span className="font-bold text-slate-800">{resultadoAnalisis.estadoVisible}</span>
+                          </div>
+                        </div>
+
+                        {/* Bloques de Recomendación Práctica */}
+                        <div className="space-y-3 text-xs leading-relaxed">
+                          <div className="bg-eco-50/60 p-3 rounded-xl border border-eco-100">
+                            <h4 className="font-bold text-eco-900 flex items-center gap-1.5 mb-1">
+                              <span>🧼</span> Instrucciones de preparación y separación:
+                            </h4>
+                            <p className="text-slate-700">{resultadoAnalisis.preparacion}</p>
+                          </div>
+
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <h4 className="font-bold text-slate-800 flex items-center gap-1.5 mb-1">
+                              <span>🔄</span> Opciones de reutilización casera:
+                            </h4>
+                            <p className="text-slate-600">{resultadoAnalisis.reutilizacion}</p>
+                          </div>
+
+                          <div className="bg-rose-50/70 p-3 rounded-xl border border-rose-100">
+                            <h4 className="font-bold text-rose-900 flex items-center gap-1.5 mb-1">
+                              <span>⚠️</span> Precauciones y manejo seguro:
+                            </h4>
+                            <p className="text-slate-700">{resultadoAnalisis.precauciones}</p>
+                            <p className="text-[10px] text-rose-800 font-medium mt-1 italic">
+                              * Nota de seguridad: No se puede certificar la ausencia total de patógenos o químicos solo con fotos. Manipula con guantes.
+                            </p>
+                          </div>
+
+                          <div className="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
+                            <h4 className="font-bold text-blue-900 flex items-center gap-1.5 mb-1">
+                              <span>🌍</span> Cómo previene contaminación ambiental:
+                            </h4>
+                            <p className="text-slate-700">{resultadoAnalisis.impactoAmbiental}</p>
+                          </div>
+                        </div>
+
+                        {/* Acción para continuar el flujo hacia la solicitud */}
+                        <div className="pt-2">
+                          <button
+                            onClick={iniciarSolicitudDesdeAnalisis}
+                            className="w-full bg-eco-600 hover:bg-eco-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2"
+                          >
+                            <span>Entregar este residuo a una agencia</span>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                          </button>
+                        </div>
+
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center flex flex-col items-center justify-center min-h-[360px] text-slate-400">
+                        <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-3 text-slate-300">
+                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        </div>
+                        <h4 className="font-semibold text-slate-700 mb-1">Aún no hay análisis que mostrar</h4>
+                        <p className="text-xs max-w-xs">
+                          Toma una fotografía o selecciona una muestra de prueba para ver el reporte de reciclaje y degradación.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. VISTA DE DIRECTORIO DE AGENCIAS */}
+            {vista === 'directorio' && (
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+                
+                {/* Cabecera y Filtros */}
+                <div className="space-y-4 mb-8">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                        Directorio de Agencias Recicladoras
+                      </h1>
+                      <p className="text-sm text-slate-600">
+                        Centros de acopio y empresas autorizadas en Bolivia para compra y recepción de reciclables.
+                      </p>
+                    </div>
+                    <div className="bg-amber-50 text-amber-900 border border-amber-200 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium">
+                      <span>ℹ️</span> Precios referenciales sujetos a verificación de peso y limpieza en planta.
+                    </div>
+                  </div>
+
+                  {/* Barra de Filtros */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Buscar por nombre o zona</label>
+                      <input 
+                        type="text" 
+                        placeholder="Ej. Sopocachi, Illimani..." 
+                        value={busquedaAgencia}
+                        onChange={(e) => setBusquedaAgencia(e.target.value)}
+                        className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-eco-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Filtrar por Ciudad</label>
+                      <select 
+                        value={filtroCiudad}
+                        onChange={(e) => setFiltroCiudad(e.target.value)}
+                        className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-eco-500"
+                      >
+                        <option value="Todas">Todas las ciudades</option>
+                        <option value="La Paz">La Paz</option>
+                        <option value="El Alto">El Alto</option>
+                        <option value="Cochabamba">Cochabamba</option>
+                        <option value="Santa Cruz">Santa Cruz</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Tipo de Material</label>
+                      <select 
+                        value={filtroMaterial}
+                        onChange={(e) => setFiltroMaterial(e.target.value)}
+                        className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-eco-500"
+                      >
+                        <option value="Todos">Todos los materiales</option>
+                        <option value="Plástico">Plástico</option>
+                        <option value="Papel y Cartón">Papel y Cartón</option>
+                        <option value="Vidrio">Vidrio</option>
+                        <option value="Metal">Metal</option>
+                        <option value="Electrónico (RAEE)">Electrónico (RAEE)</option>
+                        <option value="Orgánico">Orgánico</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Listado de Fichas de Agencias */}
+                <div className="grid md:grid-cols-2 gap-5">
+                  {AGENCIAS_DEMO
+                    .filter(a => filtroCiudad === 'Todas' || a.ciudad === filtroCiudad)
+                    .filter(a => filtroMaterial === 'Todos' || a.materiales.includes(filtroMaterial))
+                    .filter(a => busquedaAgencia === '' || 
+                      a.nombre.toLowerCase().includes(busquedaAgencia.toLowerCase()) || 
+                      a.zona.toLowerCase().includes(busquedaAgencia.toLowerCase()) ||
+                      a.direccion.toLowerCase().includes(busquedaAgencia.toLowerCase()))
+                    .map(agencia => (
+                      <div key={agencia.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:border-eco-300 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <h3 className="font-bold text-base text-slate-900">{agencia.nombre}</h3>
+                                {agencia.verificada && (
+                                  <span title="Agencia verificada en catálogo piloto" className="text-eco-600 text-xs">✓</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                <span>📍</span> {agencia.ciudad} — {agencia.zona}
+                              </p>
+                            </div>
+                            <span className="text-[11px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+                              Mínimo: {agencia.minimoKg} kg
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-600 mb-3">{agencia.direccion}</p>
+
+                          {/* Materiales que acepta */}
+                          <div className="mb-3">
+                            <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Acepta actualmente:</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {agencia.materiales.map((mat, i) => (
+                                <span key={i} className="text-xs bg-eco-50 text-eco-900 font-medium px-2 py-0.5 rounded border border-eco-200">
+                                  {mat}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Precios de referencia */}
+                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-3 text-xs">
+                            <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Precios indicativos referenciales:</span>
+                            <div className="grid grid-cols-2 gap-1 text-slate-700">
+                              {Object.entries(agencia.preciosRef).map(([nombre, precio], idx) => (
+                                <div key={idx} className="flex justify-between border-b border-slate-200/50 pb-0.5">
+                                  <span className="truncate pr-1 text-slate-600">{nombre}:</span>
+                                  <span className="font-bold text-eco-800">{precio}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Horario y Modalidad */}
+                          <div className="text-[11px] text-slate-500 space-y-1 mb-4">
+                            <p><strong>🕒 Horario:</strong> {agencia.horario}</p>
+                            <p><strong>🚚 Modalidad:</strong> {agencia.tipoServicio}</p>
+                          </div>
+                        </div>
+
+                        {/* Botones de Contacto y Solicitud */}
+                        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                          <a
+                            href={`https://wa.me/${agencia.whatsapp}?text=Hola%20${encodeURIComponent(agencia.nombre)},%20vi%20su%20perfil%20en%20EcoCircular%20y%20tengo%20material%20reciclable%20para%20entregar.`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 py-2 px-3 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1 transition-colors"
+                          >
+                            <span>💬 WhatsApp</span>
+                          </a>
+
+                          <button
+                            onClick={() => iniciarSolicitudDesdeAgencia(agencia)}
+                            className="flex-1 bg-eco-600 hover:bg-eco-700 text-white py-2 px-3 rounded-xl text-xs font-bold text-center transition-colors shadow-sm"
+                          >
+                            Enviar Solicitud
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* 4. VISTA CREAR SOLICITUD DE RECICLAJE */}
+            {vista === 'crear-solicitud' && (
+              <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+                  
+                  <div className="border-b border-slate-100 pb-4 mb-6">
+                    <button 
+                      onClick={() => setVista('directorio')} 
+                      className="text-xs font-semibold text-eco-700 hover:text-eco-800 flex items-center gap-1 mb-2"
+                    >
+                      ← Volver al directorio
+                    </button>
+                    <h1 className="text-2xl font-extrabold text-slate-900">Crear Solicitud de Reciclaje</h1>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Registra tu entrega para recibir comprobante digital y coordinar con el centro de reciclaje.
+                    </p>
+                  </div>
+
+                  <form onSubmit={guardarSolicitud} className="space-y-4 text-xs">
+                    
+                    {/* Material identificado */}
+                    <div>
+                      <label className="block font-bold text-slate-700 uppercase mb-1">Material o Residuo</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={solicitudForm.material}
+                        onChange={(e) => setSolicitudForm({...solicitudForm, material: e.target.value})}
+                        placeholder="Ej. Plástico (PET) botellas aplastadas"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-eco-500"
+                      />
+                    </div>
+
+                    {/* Agencia Seleccionada */}
+                    <div>
+                      <label className="block font-bold text-slate-700 uppercase mb-1">Agencia Recicladora de Destino</label>
+                      <select 
+                        value={solicitudForm.agenciaId}
+                        onChange={(e) => setSolicitudForm({...solicitudForm, agenciaId: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-eco-500"
+                      >
+                        {AGENCIAS_DEMO.map(ag => (
+                          <option key={ag.id} value={ag.id}>
+                            {ag.nombre} — {ag.ciudad} ({ag.zona})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Cantidad Aproximada en Kg */}
+                    <div>
+                      <label className="block font-bold text-slate-700 uppercase mb-1">Cantidad Estimada (Kilogramos)</label>
+                      <input 
+                        type="number" 
+                        min="0.5" 
+                        step="0.5" 
+                        required
+                        value={solicitudForm.cantidadKg}
+                        onChange={(e) => setSolicitudForm({...solicitudForm, cantidadKg: e.target.value})}
+                        placeholder="Ej. 6.5"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-eco-500"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Si no dispones de balanza, calcula: 1 bolsa grande de botellas aplastadas ≈ 2 a 3 kg.
+                      </span>
+                    </div>
+
+                    {/* Foto Comprobante */}
+                    <div>
+                      <label className="block font-bold text-slate-700 uppercase mb-1">Fotografía del residuo (Comprobante visual)</label>
+                      {solicitudForm.fotoUrl ? (
+                        <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-slate-200 mb-2">
+                          <img src={solicitudForm.fotoUrl} alt="Comprobante" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setSolicitudForm({...solicitudForm, fotoUrl: ''})}
+                            className="absolute top-2 right-2 bg-rose-600 text-white rounded-md px-2 py-1 text-[10px] font-bold"
+                          >
+                            Cambiar foto
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { detenerCamara(); setVista('escanear'); }}
+                            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 px-3 rounded-lg border border-slate-200 font-medium"
+                          >
+                            📷 Tomar desde escáner
+                          </button>
+                          <label className="flex-1 bg-eco-50 hover:bg-eco-100 text-eco-800 border border-eco-200 py-2.5 px-3 rounded-lg font-medium text-center cursor-pointer">
+                            📁 Subir imagen
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              className="hidden" 
+                              onChange={(e) => {
+                                const f = e.target.files[0];
+                                if (f) {
+                                  const r = new FileReader();
+                                  r.onloadend = () => setSolicitudForm({...solicitudForm, fotoUrl: r.result});
+                                  r.readAsDataURL(f);
+                                }
+                              }} 
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Observaciones */}
+                    <div>
+                      <label className="block font-bold text-slate-700 uppercase mb-1">Observaciones o Dirección de Recojo</label>
+                      <textarea 
+                        rows="3"
+                        value={solicitudForm.observaciones}
+                        onChange={(e) => setSolicitudForm({...solicitudForm, observaciones: e.target.value})}
+                        placeholder="Ej. Dejaré el material el día sábado por la mañana. Todo limpio y amarrado."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-eco-500"
+                      ></textarea>
+                    </div>
+
+                    {/* Disclaimer Demostrativo */}
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-600">
+                      <strong>Aviso de demostración:</strong> Al pulsar "Generar y Confirmar Solicitud", el registro se guardará en la memoria local de tu navegador para que puedas verificar el comprobante. No se realizarán llamadas invasivas a empresas reales.
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-eco-600 hover:bg-eco-700 text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all shadow-md mt-2"
+                    >
+                      Generar y Confirmar Solicitud
+                    </button>
+                  </form>
+
+                </div>
+              </div>
+            )}
+
+            {/* 5. VISTA COMPROBANTE DE ENTREGA */}
+            {vista === 'comprobante' && comprobanteGenerado && (
+              <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
+                <div className="bg-white rounded-3xl border-2 border-eco-200 p-6 sm:p-8 shadow-xl relative overflow-hidden">
+                  
+                  {/* Sello de agua decorativo */}
+                  <div className="absolute top-0 right-0 bg-eco-500 text-white text-[10px] font-extrabold uppercase tracking-widest px-8 py-1 rotate-45 translate-x-7 translate-y-3 shadow-sm">
+                    DEMO VÁLIDA
+                  </div>
+
+                  <div className="text-center space-y-1 mb-6">
+                    <div className="w-12 h-12 bg-eco-100 text-eco-700 rounded-2xl flex items-center justify-center mx-auto mb-2 text-2xl font-bold">
+                      ✓
+                    </div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Comprobante de Gestión Circular</span>
+                    <h2 className="text-xl font-extrabold text-slate-900">{comprobanteGenerado.id}</h2>
+                    <p className="text-xs text-slate-500">{comprobanteGenerado.fecha} (Hora Bolivia)</p>
+                  </div>
+
+                  {/* Foto de comprobante visual */}
+                  <div className="aspect-video w-full rounded-2xl overflow-hidden border border-slate-200 mb-4 bg-slate-100">
+                    <img src={comprobanteGenerado.fotoUrl} alt="Comprobante visual" className="w-full h-full object-cover" />
+                  </div>
+
+                  {/* Ficha Resumen */}
+                  <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-2 text-xs mb-6">
+                    <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                      <span className="text-slate-500">Material registrado:</span>
+                      <span className="font-bold text-slate-900 text-right">{comprobanteGenerado.material}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                      <span className="text-slate-500">Peso estimado:</span>
+                      <span className="font-bold text-eco-700">{comprobanteGenerado.cantidadKg} Kg</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                      <span className="text-slate-500">Agencia receptora:</span>
+                      <span className="font-bold text-slate-900 text-right">{comprobanteGenerado.agencia}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                      <span className="text-slate-500">Estado de solicitud:</span>
+                      <span className="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        {comprobanteGenerado.estado}
+                      </span>
+                    </div>
+                    <div className="pt-1">
+                      <span className="text-slate-500 block mb-0.5">Notas del usuario:</span>
+                      <p className="text-slate-700 italic bg-white p-2 rounded border border-slate-200">
+                        "{comprobanteGenerado.observaciones}"
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={() => setVista('solicitudes')}
+                      className="flex-1 bg-eco-600 hover:bg-eco-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-colors text-center"
+                    >
+                      Ver en Mi Historial
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.print();
+                      }}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl text-xs transition-colors"
+                    >
+                      Imprimir / Guardar PDF
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 6. VISTA HISTORIAL DE SOLICITUDES */}
+            {vista === 'solicitudes' && (
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Historial de Solicitudes</h1>
+                    <p className="text-sm text-slate-600">Registro de entregas programadas durante la sesión del prototipo.</p>
+                  </div>
+                  <button
+                    onClick={() => { detenerCamara(); setVista('escanear'); }}
+                    className="bg-eco-600 hover:bg-eco-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-sm"
+                  >
+                    + Nueva Entrega
+                  </button>
+                </div>
+
+                {solicitudes.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400">
+                    <p className="text-sm">No tienes solicitudes registradas aún.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {solicitudes.map(sol => (
+                      <div key={sol.id} className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-center gap-4">
+                        <img src={sol.fotoUrl} alt={sol.material} className="w-full sm:w-24 h-24 object-cover rounded-xl border border-slate-100 flex-shrink-0" />
+                        
+                        <div className="flex-1 space-y-1 w-full text-center sm:text-left">
+                          <div className="flex items-center justify-center sm:justify-between flex-wrap gap-2">
+                            <span className="font-extrabold text-slate-900 text-sm">{sol.material}</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              sol.estado === 'Atendida' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                              sol.estado === 'Recibida' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                              'bg-amber-50 text-amber-800 border-amber-200'
+                            }`}>
+                              {sol.estado}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500">Destino: <strong className="text-slate-700">{sol.agencia}</strong></p>
+                          <p className="text-xs text-slate-500">Cantidad: <strong className="text-eco-700">{sol.cantidadKg} Kg</strong> | Creado: {sol.fecha}</p>
+                          <p className="text-[11px] text-slate-600 italic truncate">"{sol.observaciones}"</p>
+                        </div>
+
+                        <div className="flex sm:flex-col gap-2 w-full sm:w-auto">
+                          <button
+                            onClick={() => {
+                              setComprobanteGenerado(sol);
+                              setVista('comprobante');
+                            }}
+                            className="flex-1 sm:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-lg"
+                          >
+                            Ver Voucher
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 7. VISTA GUÍA ECOLÓGICA Y EDUCATIVA */}
+            {vista === 'guia' && (
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+                <div className="text-center max-w-2xl mx-auto space-y-2">
+                  <h1 className="text-3xl font-extrabold text-slate-900">Guía Integral de Reciclaje</h1>
+                  <p className="text-sm text-slate-600">
+                    Aprende los criterios técnicos de clasificación, los códigos de resina y las acciones individuales para proteger el agua, suelo y aire de Bolivia.
+                  </p>
+                </div>
+
+                {/* 6 Categorías Clave */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  
+                  {/* Plásticos */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🥤</span>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">Plásticos (1 al 7)</h3>
+                        <span className="text-[10px] text-slate-500 uppercase font-semibold">Termoplásticos y Film</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Reconocimiento:</strong> Busca el triángulo con números 1 (PET), 2 (HDPE) o 4 (LDPE).
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Separación:</strong> Enjuagar para retirar restos orgánicos. Quitar la tapa y aplastar.
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Riesgo ambiental:</strong> En ríos bolivianos se fragmenta en microplásticos que consumen peces y fauna endémica.
+                    </p>
+                  </div>
+
+                  {/* Papel y Cartón */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">📦</span>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">Papel y Cartón</h3>
+                        <span className="text-[10px] text-slate-500 uppercase font-semibold">Celulosa reciclable</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Reconocimiento:</strong> Cajas corrugadas, papel bond, periódicos secos.
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Separación:</strong> Desarmar cajas para dejarlas planas. No mezclar con papel plastificado o engrasado (cajas de pizza con queso).
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Riesgo ambiental:</strong> Su descomposición anaeróbica en botaderos genera gas metano de alto efecto invernadero.
+                    </p>
+                  </div>
+
+                  {/* Vidrio */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🍾</span>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">Vidrio</h3>
+                        <span className="text-[10px] text-slate-500 uppercase font-semibold">Infinitamente Reciclable</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Reconocimiento:</strong> Botellas de vino, cerveza, refresco y frascos de conservas.
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Separación:</strong> Quitar tapas metálicas o corchos. No mezclar con vidrios planos de ventanas o espejos (tienen otro punto de fusión).
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Riesgo ambiental:</strong> No se degrada biológicamente. En bosques secos como la Chiquitania puede actuar como lupa e iniciar incendios.
+                    </p>
+                  </div>
+
+                  {/* Metales */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🥫</span>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">Metales</h3>
+                        <span className="text-[10px] text-slate-500 uppercase font-semibold">Aluminio y Hojalata</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Reconocimiento:</strong> Latas de atún, refresco, perfiles de construcción y cables limpios.
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Separación:</strong> Aplastar latas de bebidas. Retirar restos de comida en hojalata para evitar roedores.
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Riesgo ambiental:</strong> Su extracción virgen destruye ecosistemas y contamina aguas de cabecera con relaves mineros.
+                    </p>
+                  </div>
+
+                  {/* Orgánicos */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🍎</span>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">Residuos Orgánicos</h3>
+                        <span className="text-[10px] text-slate-500 uppercase font-semibold">Compostaje y Humus</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Reconocimiento:</strong> Cáscaras de fruta, verduras, restos de café y podas de jardín.
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Separación:</strong> Separar en compostera casera con capas secas (hojarasca/aserrín). Evitar carnes y heces de mascotas.
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Riesgo ambiental:</strong> Representan más del 55% de la basura urbana en Bolivia. Producen lixiviados venenosos en botaderos.
+                    </p>
+                  </div>
+
+                  {/* Electrónicos (RAEE) */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">💻</span>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">Electrónicos (RAEE)</h3>
+                        <span className="text-[10px] text-slate-500 uppercase font-semibold">Manejo Especial</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Reconocimiento:</strong> Teléfonos, cargadores, tarjetas madres, pilas y baterías de litio.
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Separación:</strong> NUNCA botar al basurero común. Cubrir bornes de baterías con cinta adhesiva para evitar cortocircuitos.
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>Riesgo ambiental:</strong> Una sola pila de botón puede contaminar hasta 600,000 litros de agua dulce.
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* Plan de Acción: Suelo, Agua, Aire */}
+                <div className="bg-eco-950 text-white rounded-3xl p-6 sm:p-10 space-y-6">
+                  <h2 className="text-2xl font-bold text-eco-300">Acciones cotidianas para frenar la contaminación en Bolivia</h2>
+                  
+                  <div className="grid md:grid-cols-3 gap-6 text-xs text-slate-300 leading-relaxed">
+                    <div className="space-y-2 border-l-2 border-eco-500 pl-4">
+                      <h4 className="text-white font-bold text-sm">Protección del Suelo</h4>
+                      <p>• Jamás deseches aceite de cocina usado en la tierra ni por el desagüe (1 litro de aceite contamina 1,000 litros de agua).</p>
+                      <p>• Prefiere abonos orgánicos a fertilizantes químicos que salinizan los suelos del altiplano y valles.</p>
+                    </div>
+
+                    <div className="space-y-2 border-l-2 border-blue-400 pl-4">
+                      <h4 className="text-white font-bold text-sm">Cuidado del Agua</h4>
+                      <p>• Participa en limpiezas comunitarias de cuencas y no tires bolsas plásticas en torrenteras antes de la época de lluvias.</p>
+                      <p>• Apoya a los recicladores de base: ellos retiran de circulación plásticos antes de que lleguen a los lagos Titicaca o Poopó.</p>
+                    </div>
+
+                    <div className="space-y-2 border-l-2 border-amber-400 pl-4">
+                      <h4 className="text-white font-bold text-sm">Defensa del Aire</h4>
+                      <p>• Di no al "chaqueo" o quema de basura doméstica y llantas en San Juan o fiestas patronales.</p>
+                      <p>• Promueve la movilidad compartida o bicicleta en nuestras ciudades congestionadas.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </main>
+
+          {/* MODAL CONFIGURACIÓN GEMINI API */}
+          {apiKeyModal && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                    <span>⚙️</span> Configuración de IA Gemini
+                  </h3>
+                  <button onClick={() => setApiKeyModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+                </div>
+
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  EcoCircular funciona de manera predeterminada en <strong>Modo Demostración</strong> para presentaciones académicas sin requerir credenciales externas.
+                </p>
+
+                <div className="space-y-3 text-xs">
+                  <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <span className="font-semibold text-slate-700">Forzar Modo Demostrativo (Offline):</span>
+                    <input 
+                      type="checkbox" 
+                      checked={modoDemoForzado} 
+                      onChange={(e) => setModoDemoForzado(e.target.checked)}
+                      className="w-4 h-4 text-eco-600 rounded"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                      API Key de Google AI Studio (Opcional)
+                    </label>
+                    <input 
+                      type="password" 
+                      placeholder="AIzaSy..." 
+                      value={apiKey}
+                      onChange={(e) => {
+                        setApiKey(e.target.value);
+                        localStorage.setItem('ecocircular_gemini_key', e.target.value);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-xs focus:ring-2 focus:ring-eco-500"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      Se conserva en el localStorage de este navegador. Para despliegues de producción, se conecta vía endpoint seguro.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2">
+                  <button 
+                    onClick={() => setApiKeyModal(false)}
+                    className="bg-eco-600 hover:bg-eco-700 text-white font-bold text-xs py-2 px-4 rounded-xl"
+                  >
+                    Guardar y Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-slate-900 text-slate-400 text-xs py-10 border-t border-slate-800 mt-auto">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="space-y-2 md:col-span-2">
+                <div className="flex items-center gap-2 text-white font-bold text-base">
+                  <span className="text-eco-400">●</span> EcoCircular Bolivia
+                </div>
+                <p className="text-slate-400 text-xs max-w-sm leading-relaxed">
+                  Prototipo funcional de economía circular y educación ambiental. Desarrollado con tecnología web moderna e Inteligencia Artificial multimodal para mitigar la contaminación urbana.
+                </p>
+                <p className="text-[10px] text-slate-400">© 2026 EcoCircular — Datos demostrativos para presentación técnica.</p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-white text-xs uppercase tracking-wider mb-2">Secciones</h4>
+                <ul className="space-y-1.5 text-xs">
+                  <li><button onClick={() => setVista('inicio')} className="hover:text-eco-400">Página Principal</button></li>
+                  <li><button onClick={() => { detenerCamara(); setVista('escanear'); }} className="hover:text-eco-400">Identificador con Cámara</button></li>
+                  <li><button onClick={() => setVista('directorio')} className="hover:text-eco-400">Directorio de Agencias</button></li>
+                  <li><button onClick={() => setVista('guia')} className="hover:text-eco-400">Guía de Suelo, Agua y Aire</button></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-white text-xs uppercase tracking-wider mb-2">Valores y Compromiso</h4>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  Promovemos la dignificación de los recicladores de base y el cumplimiento de las metas de desarrollo sostenible en comunidades urbanas y rurales.
+                </p>
+              </div>
+            </div>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // Renderizado en DOM
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

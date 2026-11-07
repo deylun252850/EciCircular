@@ -1,0 +1,20 @@
+const categories = [
+  { icon: '🥤', title: 'Plásticos (1 al 7)', subtitle: 'Termoplásticos y Film', points: ['Reconocimiento: busca el triángulo con números 1 (PET), 2 (HDPE) o 4 (LDPE).', 'Separación: enjuaga para retirar restos orgánicos. Quita la tapa y aplasta.', 'Riesgo ambiental: puede fragmentarse en microplásticos que afectan ríos y fauna.'] },
+  { icon: '📦', title: 'Papel y Cartón', subtitle: 'Celulosa reciclable', points: ['Reconocimiento: cajas corrugadas, papel bond y periódicos secos.', 'Separación: desarma las cajas. No mezcles papel plastificado o engrasado.', 'Riesgo ambiental: su descomposición anaeróbica en botaderos genera metano.'] },
+  { icon: '🍾', title: 'Vidrio', subtitle: 'Infinitamente reciclable', points: ['Reconocimiento: botellas de vino, cerveza, refresco y frascos.', 'Separación: quita tapas y corchos. No mezcles vidrio plano de ventanas o espejos.', 'Riesgo ambiental: no se degrada biológicamente y puede causar incendios en zonas secas.'] },
+  { icon: '🥫', title: 'Metales', subtitle: 'Aluminio y Hojalata', points: ['Reconocimiento: latas de conserva y refresco, perfiles y cables limpios.', 'Separación: aplasta latas y retira restos de comida.', 'Riesgo ambiental: la extracción de metales puede degradar ecosistemas y aguas.'] },
+  { icon: '🍎', title: 'Residuos Orgánicos', subtitle: 'Compostaje y Humus', points: ['Reconocimiento: cáscaras de fruta, restos de café y podas.', 'Separación: usa una compostera con capas secas. Evita carnes y heces de mascotas.', 'Riesgo ambiental: los residuos orgánicos generan lixiviados en botaderos.'] },
+  { icon: '💻', title: 'Electrónicos (RAEE)', subtitle: 'Manejo Especial', points: ['Reconocimiento: teléfonos, cargadores, tarjetas, pilas y baterías.', 'Separación: nunca los tires al basurero común. Cubre bornes de baterías con cinta.', 'Riesgo ambiental: sus componentes requieren manejo especializado para evitar contaminación.'] },
+];
+
+export function GuidePage() {
+  return <div className="mx-auto max-w-5xl space-y-10 px-4 py-8 sm:px-6">
+    <header className="mx-auto max-w-2xl space-y-2 text-center"><h1 className="text-3xl font-extrabold text-slate-900">Guía Integral de Reciclaje</h1><p className="text-sm text-slate-600">Aprende criterios de clasificación, códigos de resina y acciones para proteger el agua, suelo y aire de Bolivia.</p></header>
+    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{categories.map((category) => <article key={category.title} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2"><span className="text-2xl">{category.icon}</span><div><h2 className="text-base font-bold text-slate-900">{category.title}</h2><span className="text-[10px] font-semibold uppercase text-slate-500">{category.subtitle}</span></div></div>{category.points.map((point) => <p key={point} className="text-xs leading-relaxed text-slate-600">{point}</p>)}</article>)}</div>
+    <section className="space-y-6 rounded-3xl bg-eco-950 p-6 text-white sm:p-10"><h2 className="text-2xl font-bold text-eco-300">Acciones cotidianas para frenar la contaminación en Bolivia</h2><div className="grid gap-6 text-xs leading-relaxed text-slate-300 md:grid-cols-3">
+      <div className="space-y-2 border-l-2 border-eco-500 pl-4"><h3 className="text-sm font-bold text-white">Protección del Suelo</h3><p>• No deseches aceite de cocina usado en la tierra ni por el desagüe.</p><p>• Prefiere abonos orgánicos a fertilizantes que degradan los suelos.</p></div>
+      <div className="space-y-2 border-l-2 border-blue-400 pl-4"><h3 className="text-sm font-bold text-white">Cuidado del Agua</h3><p>• Participa en limpiezas comunitarias de cuencas y no tires bolsas en torrenteras.</p><p>• Apoya a recicladores de base para evitar que los residuos lleguen a ríos y lagos.</p></div>
+      <div className="space-y-2 border-l-2 border-amber-400 pl-4"><h3 className="text-sm font-bold text-white">Defensa del Aire</h3><p>• Evita la quema de basura doméstica y llantas.</p><p>• Promueve la movilidad compartida o el uso de bicicleta.</p></div>
+    </div></section>
+  </div>;
+}
